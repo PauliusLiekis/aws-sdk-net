@@ -86,6 +86,7 @@ namespace Amazon.S3.Util
                 concreteClient.ConfigureProxy(httpRequest);
             }
 
+            WebException we = null;
             try
             {
                 using (var httpResponse = httpRequest.GetResponse() as HttpWebResponse)
@@ -94,21 +95,24 @@ namespace Amazon.S3.Util
                     return true;
                 }
             }
-            catch (WebException we)
+            catch (WebException ex)
             {
-                using (var errorResponse = we.Response as HttpWebResponse)
-                {
-                    if (errorResponse != null)
-                    {
-                        var code = errorResponse.StatusCode;
-                        return code != HttpStatusCode.NotFound &&
-                            code != HttpStatusCode.BadRequest;
-                    }
+                we = ex;
+            }
 
-                    // The Error Response is null which is indicative of either
-                    // a bad request or some other problem
-                    return false;
+            // this code is executed when WebException is thrown
+            using (var errorResponse = we.Response as HttpWebResponse)
+            {
+                if (errorResponse != null)
+                {
+                    var code = errorResponse.StatusCode;
+                    return code != HttpStatusCode.NotFound &&
+                        code != HttpStatusCode.BadRequest;
                 }
+
+                // The Error Response is null which is indicative of either
+                // a bad request or some other problem
+                return false;
             }
         }
 
